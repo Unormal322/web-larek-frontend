@@ -38,7 +38,7 @@
 - Page;
 
 3. Презентер (Presenter):
-- index.ts
+- EventEmmiter;
 
 4. Базовые классы (base):
 - Api;

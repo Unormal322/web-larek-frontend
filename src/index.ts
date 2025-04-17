@@ -11,7 +11,7 @@ import { OrderDeliveryForm } from './components/OrderDeliveryForm';
 import { Page } from "./components/Page";
 import { ProjectApi } from './components/ProjectApi';
 import { IDelivery, IContacts, CatalogChangeEvent, IOrderDetails, FormError } from './types';
-import { API_URL, CDN_URL } from "./utils/constants";
+import { API_URL, CDN_URL, triggerEvents } from "./utils/constants";
 import { cloneTemplate, ensureElement } from "./utils/utils";
 
 // Добавляем инициализацию событий
@@ -48,13 +48,13 @@ api.getItemList()
     .catch(error => console.log(error));
 
 // Устанавлием обработчик на событие обновления каталога
-events.on<CatalogChangeEvent>('items:changed', () => {
+events.on<CatalogChangeEvent>(triggerEvents.itemsChanged, () => {
     // Обновляем данные каталога на странице
     page.catalog = appState.catalog.map((item: AppDataItem) => {
         // Создаем экземпляр карточки товара
         const card = new CardData(cloneTemplate(appTemplates.catalogCard), {
             // Добавляем обработчик клика по карточке
-            onClick: () => events.emit('item:select', item)
+            onClick: () => events.emit(triggerEvents.itemSelect, item)
         });
 
         // Отображаем карточку с актуальными данными товара
@@ -68,12 +68,12 @@ events.on<CatalogChangeEvent>('items:changed', () => {
 });
 
 // Устанавлием обработчик на событие открытия превью карточки товара
-events.on('item:select', (item: AppDataItem) => {
+events.on(triggerEvents.itemSelect, (item: AppDataItem) => {
     appState.setPreview(item);
 });
 
 // Устанавлием обработчик при открытии превью выбранной карточки
-events.on('preview:change', (item: AppDataItem) => {
+events.on(triggerEvents.preview, (item: AppDataItem) => {
     // Создаем экземпляр карточки
     const card = new CardData(cloneTemplate(appTemplates.previewCard), {
         onClick: () => {
@@ -108,25 +108,25 @@ events.on('preview:change', (item: AppDataItem) => {
 });
 
 // Устанавливаем обработчик добавления товара в корзину
-events.on('item:addToBasket', (item: AppDataItem) => {
+events.on(triggerEvents.addToBasket, (item: AppDataItem) => {
     appState.addToBasket(item);
     modal.close();
 });
 
 // Устанавливаем обработчик удаления товара из корзины
-events.on('item:deleteFromBasket', (item: AppDataItem) => {
+events.on(triggerEvents.deleteFromBasket, (item: AppDataItem) => {
     appState.removeFromBasket(item.id);
 });
 
 // Устанавлием обработчик на открытие модального окна при открытии корзины
-events.on('basket:open', () => {
+events.on(triggerEvents.basketOpen, () => {
     modal.render({
         content: basket.render()
     });
 });
 
 // Устанавлием обработчик при открытии корзины
-events.on('basket:changed', () => {
+events.on(triggerEvents.basketChanged, () => {
     // Обновляем счетчик товаров в шапке
     page.counter = appState.getBasketQuantity();
 
@@ -161,7 +161,7 @@ events.on('basket:changed', () => {
 });
 
 // Слушатель открытия формы заказа
-events.on('order:open', () => {
+events.on(triggerEvents.orderOpen, () => {
     modal.render({
         content: delivery.render({
             payment: '',
@@ -173,24 +173,24 @@ events.on('order:open', () => {
 });
 
 // Добавляем слушатель при выборе способа оплаты
-events.on('payment:changed', (data: { field: keyof IDelivery; value: string }) => {
+events.on(triggerEvents.paymentChange, (data: { field: keyof IDelivery; value: string }) => {
     appState.setDeliveries(data.field, data.value);
 });
 
 // Добавляем слушатель при изменении адреса доставки
-events.on('order.address:change', (data: { field: keyof IDelivery; value: string }) => {
+events.on(triggerEvents.addressChange, (data: { field: keyof IDelivery; value: string }) => {
     appState.setDeliveries(data.field, data.value);
 });
 
 // Добавляем слушатель на валидацию полей "Оплата" и "Адрес доставки"
-events.on('deliveriesFormErrors:change', (errors: FormError) => {
+events.on(triggerEvents.deliveryFormErrors, (errors: FormError) => {
     const { payment, address } = errors;
     delivery.valid = !payment && !address
     delivery.errors = Object.values({ payment, address }).filter(i => !!i).join('; ');
 });
 
 // Слушать открытия формы контактных данных
-events.on('order:submit', () => {
+events.on(triggerEvents.orderSumbit, () => {
     modal.render({
         content: contact.render({
             phone: '',
@@ -202,19 +202,19 @@ events.on('order:submit', () => {
 });
 
 // Добавляем слушатель при изменении контактных данных
-events.on(/^contacts\..*:change/, (data: {field: keyof IContacts, value: string}) => {
+events.on(triggerEvents.contactsChange, (data: {field: keyof IContacts, value: string}) => {
     appState.setContacts(data.field, data.value)
 });
 
 // Добавляем слушатель на валидацию полей "Email" и "Телефон"
-events.on('contactsFormErrors:change', (errors: FormError) => {
+events.on(triggerEvents.contactsFormErrors, (errors: FormError) => {
     const { phone, email } = errors;
     contact.valid = !phone && !email;
     contact.errors = Object.values({ phone, email }).filter(i => !!i).join('; ');
 });
 
 // Оформляем заказ и выводим окно с сообщением об успешной оплате
-events.on('contacts:submit', () => {
+events.on(triggerEvents.contactsSumbit, () => {
     // Отправляем собранный заказ товаров на сервер
     api.orderPlaced(appState.getCollectedOrder())
         .then(() => {
@@ -234,11 +234,11 @@ events.on('contacts:submit', () => {
 });
 
 // Блокируем прокрутку страницы если открыта модальное окно
-events.on('modal:open', () => {
+events.on(triggerEvents.modalOpen, () => {
     page.locked = true;
 });
 
 // Разблокируем прокрутку страницы если модальное окно закрыто
-events.on('modal:close', () => {
+events.on(triggerEvents.modalClose, () => {
     page.locked = false;
 });

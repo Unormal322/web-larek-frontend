@@ -2,6 +2,7 @@ import { IEvents } from "./base/events";
 import { ensureAllElements, ensureElement } from "../utils/utils";
 import { Form } from "./common/Form";
 import { IDelivery } from "../types";
+import { triggerEvents } from "../utils/constants";
 
 export class OrderDeliveryForm extends Form<IDelivery> {
     protected _paymentButtons: HTMLButtonElement[];
@@ -23,7 +24,7 @@ export class OrderDeliveryForm extends Form<IDelivery> {
             button.classList.toggle('button_alt-active', button === clickedButton);
         });
         // Подписываемся на событие при выборе способа оплаты
-        events.emit('payment:changed', { field: 'payment', value: clickedButton.name });
+        events.emit(triggerEvents.paymentChange, { field: 'payment', value: clickedButton.name });
     };
 
     // Сеттер для установки значения поля "Адрес доставки"

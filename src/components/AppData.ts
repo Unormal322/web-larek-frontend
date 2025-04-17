@@ -1,6 +1,7 @@
 // import { EventEmitter, IEvents } from './base/events';
 import {Model} from './base/Model';
 import { IItem, IOrderDetails, IDelivery, IContacts, FormError, TPayment } from "../types";
+import { triggerEvents } from "../utils/constants";
 
 export class AppDataItem extends Model<IItem> {
     id: string;
@@ -34,13 +35,13 @@ export class AppState extends Model<IAppState> {
     // Устанавливает каталог и обновляет
     setCatalog(items: AppDataItem[]) {
         this.catalog = items.map(item => new AppDataItem(item, this.events));
-        this.events.emit('items:changed', { catalog: this.catalog });
+        this.events.emit(triggerEvents.itemsChanged, { catalog: this.catalog });
     };
 
     // Устанавливает превью карточки
     setPreview(item: AppDataItem) {
         this.preview = item;
-        this.emitChanges('preview:change', item);
+        this.emitChanges(triggerEvents.preview, item);
     };
 
     // Добавление товара в корзину заказа
@@ -51,7 +52,7 @@ export class AppState extends Model<IAppState> {
         this.basketSum = this.getBasketSum() + item.price;
 
         // Добавляем обработчик при изменении корзины
-        this.events.emit('basket:changed', this.basketItems);
+        this.events.emit(triggerEvents.basketChanged, this.basketItems);
     };
 
     // Удаление товара из корзины заказа
@@ -62,14 +63,14 @@ export class AppState extends Model<IAppState> {
         this.basketSum = this.getBasketSum();
 
         // Добавляем обработчик при изменении корзины
-        this.events.emit('basket:changed', this.basketItems);
+        this.events.emit(triggerEvents.basketChanged, this.basketItems);
     };
 
     // Очистка корзины
     clearBasket() {
         this.basketItems = [];
         this.basketSum = 0;
-        this.events.emit('basket:changed', this.basketItems);
+        this.events.emit(triggerEvents.basketChanged, this.basketItems);
     };
 
     getBasketSum() {
@@ -119,7 +120,7 @@ export class AppState extends Model<IAppState> {
             errors.payment = 'Необходимо выбрать способ оплаты заказа';
         };
         this.formErrors = errors;
-        this.events.emit('deliveriesFormErrors:change', this.formErrors);
+        this.events.emit(triggerEvents.deliveryFormErrors, this.formErrors);
         return Object.keys(errors).length === 0;
     }
 
@@ -144,7 +145,7 @@ export class AppState extends Model<IAppState> {
             errors.email = 'Необходимо указать email';
         };
         this.formErrors = errors;
-        this.events.emit('contactsFormErrors:change', this.formErrors);
+        this.events.emit(triggerEvents.contactsFormErrors, this.formErrors);
         return Object.keys(errors).length === 0;
     };
 
